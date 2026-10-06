@@ -1,0 +1,158 @@
+[
+  {
+    "name": "negative_validation_matrix",
+    "status": "PASS",
+    "cases": [
+      [
+        "/api/auth/register",
+        422
+      ],
+      [
+        "/api/candidate/assessment",
+        422
+      ],
+      [
+        "/api/candidate/profile",
+        422
+      ],
+      [
+        "/api/candidate/profile",
+        422
+      ],
+      [
+        "/api/candidate/profile",
+        422
+      ],
+      [
+        "/api/candidate/fsp",
+        422
+      ],
+      [
+        "/api/employer/needs",
+        422
+      ],
+      [
+        "/api/employer/vacancies",
+        422
+      ]
+    ]
+  },
+  {
+    "name": "token_random",
+    "status": "PASS",
+    "http": 401
+  },
+  {
+    "name": "token_expired",
+    "status": "PASS",
+    "http": 401
+  },
+  {
+    "name": "token_wrong_purpose",
+    "status": "PASS",
+    "http": 401
+  },
+  {
+    "name": "parallel_assessment_start",
+    "status": "BUG",
+    "http": [
+      201,
+      201
+    ],
+    "active_ids": [
+      1,
+      2
+    ],
+    "scheduling": "barrier after active-attempt read"
+  },
+  {
+    "name": "parallel_assessment_answer",
+    "status": "BUG",
+    "http": [
+      200,
+      200
+    ],
+    "different_next_questions": true,
+    "stored_first_answer": 0,
+    "stored_question_count": 2,
+    "scheduling": "barrier after both validate same position"
+  },
+  {
+    "name": "fsp_mock_lifecycle",
+    "status": "PASS",
+    "http": [
+      200,
+      409,
+      404,
+      200
+    ]
+  },
+  {
+    "name": "closed_vacancy_rejects_application",
+    "status": "PASS",
+    "http": 404
+  },
+  {
+    "name": "cross_specialization_failure_lock",
+    "status": "INFO",
+    "http": 409,
+    "detail": {
+      "detail": "Тест на этот грейд будет доступен 20.10.2026"
+    },
+    "context": "failed QA middle blocks backend middle too; clarify product decision"
+  },
+  {
+    "name": "salary_not_used_in_matching",
+    "status": "INFO",
+    "salary_expectation": 500000,
+    "budget_max": 100000,
+    "score": 94.0,
+    "context": "expectation intentionally private; no overlap signal"
+  },
+  {
+    "name": "bank_scale_100",
+    "status": "INFO",
+    "http": 200,
+    "total": 101,
+    "response_bytes": 66662,
+    "latency_ms": [
+      13.7,
+      11.2,
+      13.0
+    ],
+    "environment": "in-process TestClient, SQLite, no network"
+  },
+  {
+    "name": "bank_scale_1000",
+    "status": "INFO",
+    "http": 200,
+    "total": 1001,
+    "response_bytes": 661567,
+    "latency_ms": [
+      89.5,
+      129.2,
+      71.0
+    ],
+    "environment": "in-process TestClient, SQLite, no network"
+  },
+  {
+    "name": "bank_scale_3000",
+    "status": "INFO",
+    "http": 200,
+    "total": 3001,
+    "response_bytes": 1985567,
+    "latency_ms": [
+      280.1,
+      171.7,
+      266.5
+    ],
+    "environment": "in-process TestClient, SQLite, no network"
+  },
+  {
+    "name": "employer_account_erasure",
+    "status": "PASS",
+    "http": 204,
+    "needs_remaining": 0,
+    "candidate_preserved": true
+  }
+]

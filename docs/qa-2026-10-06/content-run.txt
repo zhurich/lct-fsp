@@ -1,0 +1,163 @@
+{
+  "invalid_complexity_examples": {
+    "failed": 16,
+    "sample_size": 60,
+    "examples": [
+      {
+        "seed": 0,
+        "error": "UnboundLocalError: cannot access local variable 'cnt' where it is not associated with a value",
+        "code": "def walk(n):\n    if n <= 1:\n        return 1\n    for i in range(n):\n        cnt += 1\n    return walk(n // 2) + walk(n // 2)",
+        "answer": "O(n log n)"
+      },
+      {
+        "seed": 3,
+        "error": "UnboundLocalError: cannot access local variable 'ops' where it is not associated with a value",
+        "code": "def f(n):\n    if n <= 1:\n        return 1\n    for i in range(n):\n        ops += 1\n    return f(n - 1)",
+        "answer": "O(n²)"
+      },
+      {
+        "seed": 10,
+        "error": "UnboundLocalError: cannot access local variable 'steps' where it is not associated with a value",
+        "code": "def f(n):\n    if n <= 1:\n        return 1\n    for i in range(n):\n        steps += 1\n    return f(n // 2) + f(n // 2)",
+        "answer": "O(n log n)"
+      }
+    ]
+  },
+  "strategies": {
+    "longest": {
+      "intern": {
+        "passed": 8,
+        "n": 150
+      },
+      "junior": {
+        "passed": 0,
+        "n": 150
+      },
+      "middle": {
+        "passed": 0,
+        "n": 150
+      },
+      "senior": {
+        "passed": 0,
+        "n": 150
+      }
+    },
+    "common_only": {
+      "intern": {
+        "passed": 150,
+        "n": 150
+      },
+      "junior": {
+        "passed": 150,
+        "n": 150
+      },
+      "middle": {
+        "passed": 139,
+        "n": 150
+      },
+      "senior": {
+        "passed": 0,
+        "n": 150
+      }
+    }
+  },
+  "independent_parser_examples": [
+    {
+      "text": "Нужен middle backend Python, удалённая работа невозможна, только офис. Зарплата 150–200 тыс. руб.",
+      "parsed": {
+        "specialization": "backend",
+        "grade": "middle",
+        "stack": [
+          "Python"
+        ],
+        "work_formats": [
+          "remote",
+          "office"
+        ],
+        "salary_from": 150000,
+        "salary_to": 200000,
+        "notes": [
+          "Специализация «Бэкенд-разработка» названа в тексте",
+          "Грейд «Middle» назван в тексте",
+          "Стек: Python",
+          "Формат работы: удалённо, офис",
+          "Зарплата: от 150 000 – 200 000 ₽"
+        ]
+      }
+    },
+    {
+      "text": "Нужен senior backend, наставничество junior-разработчиков. Python PostgreSQL.",
+      "parsed": {
+        "specialization": "backend",
+        "grade": "junior",
+        "stack": [
+          "Python",
+          "PostgreSQL"
+        ],
+        "work_formats": [],
+        "salary_from": null,
+        "salary_to": null,
+        "notes": [
+          "Специализация «Бэкенд-разработка» названа в тексте",
+          "Грейд «Junior» назван в тексте",
+          "Стек: Python, PostgreSQL"
+        ]
+      }
+    },
+    {
+      "text": "Нужен backend middle Python. Бюджет от 2000 до 3000 USD.",
+      "parsed": {
+        "specialization": "backend",
+        "grade": "middle",
+        "stack": [
+          "Python"
+        ],
+        "work_formats": [],
+        "salary_from": null,
+        "salary_to": null,
+        "notes": [
+          "Специализация «Бэкенд-разработка» названа в тексте",
+          "Грейд «Middle» назван в тексте",
+          "Стек: Python"
+        ]
+      }
+    },
+    {
+      "text": "Нужен backend middle Python, зарплата до 250 тыс. руб.",
+      "parsed": {
+        "specialization": "backend",
+        "grade": "middle",
+        "stack": [
+          "Python"
+        ],
+        "work_formats": [],
+        "salary_from": null,
+        "salary_to": null,
+        "notes": [
+          "Специализация «Бэкенд-разработка» названа в тексте",
+          "Грейд «Middle» назван в тексте",
+          "Стек: Python"
+        ]
+      }
+    },
+    {
+      "text": "Нужен frontend senior React, зарплата 200 000–300 000 рублей.",
+      "parsed": {
+        "specialization": "frontend",
+        "grade": "senior",
+        "stack": [
+          "React"
+        ],
+        "work_formats": [],
+        "salary_from": 200000,
+        "salary_to": 300000,
+        "notes": [
+          "Специализация «Фронтенд-разработка» названа в тексте",
+          "Грейд «Senior» назван в тексте",
+          "Стек: React",
+          "Зарплата: от 200 000 – 300 000 ₽"
+        ]
+      }
+    }
+  ]
+}

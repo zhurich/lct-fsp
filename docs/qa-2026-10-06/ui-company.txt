@@ -1,0 +1,46 @@
+- banner:
+  - img "Федерация спортивного программирования России"
+  - paragraph: Карьера
+  - generic: Работодатель
+  - paragraph: demo-employer@example.com
+  - button "Выйти":
+    - generic: Выйти
+- navigation:
+  - link "Подборки":
+    - /url: /employer/needs
+    - generic: Подборки
+  - link "Банк кандидатов":
+    - /url: /employer/candidates
+    - generic: Банк кандидатов
+  - link "Приглашения":
+    - /url: /employer/invitations
+    - generic: Приглашения
+  - link "Вакансии":
+    - /url: /employer/vacancies
+    - generic: Вакансии
+  - link "Задания":
+    - /url: /employer/challenges
+    - generic: Задания
+  - link "Компания" [active]:
+    - /url: /employer/company
+    - generic: Компания
+- main:
+  - heading "Компания" [level=2]
+  - heading "Об организации" [level=4]
+  - generic: Название
+  - textbox "Название": ООО «Северный платёж»
+  - generic: Направление деятельности
+  - textbox "Направление деятельности": Финтех
+  - generic: Сайт
+  - textbox "Сайт": https://example.com
+  - generic: Описание
+  - textbox "Описание": "Платёжный сервис для малого бизнеса: эквайринг, сверка, выплаты."
+  - heading "Контакты" [level=4]
+  - generic: Контактное лицо
+  - textbox "Контактное лицо": Отдел подбора
+  - generic: Почта
+  - textbox "Почта": demo-employer@example.com
+  - generic: Телефон
+  - textbox "Телефон": +7 495 000-00-00
+  - button "Сохранить" [disabled]:
+    - generic: Сохранить

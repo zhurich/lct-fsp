@@ -1,0 +1,45 @@
+- banner:
+  - img "Федерация спортивного программирования России"
+  - paragraph: Карьера
+  - generic: Работодатель
+  - paragraph: demo-employer@example.com
+  - button "Выйти":
+    - generic: Выйти
+- navigation:
+  - link "Подборки":
+    - /url: /employer/needs
+    - generic: Подборки
+  - link "Банк кандидатов":
+    - /url: /employer/candidates
+    - generic: Банк кандидатов
+  - link "Приглашения":
+    - /url: /employer/invitations
+    - generic: Приглашения
+  - link "Вакансии" [active]:
+    - /url: /employer/vacancies
+    - generic: Вакансии
+  - link "Задания":
+    - /url: /employer/challenges
+    - generic: Задания
+  - link "Компания":
+    - /url: /employer/company
+    - generic: Компания
+- main:
+  - heading "Вакансии" [level=2]
+  - paragraph: "Классический сценарий: кандидаты с подтверждённой категорией откликаются сами."
+  - button "Новая вакансия":
+    - generic: Новая вакансия
+  - heading "Начинающий фронтендер" [level=4]
+  - generic: "Новых откликов: 1"
+  - paragraph: Фронтенд-разработка · Junior · 70 000 – 100 000 ₽ · от 06.10.2026
+  - button "Изменить":
+    - generic: Изменить
+  - 'button "Отклики: 3"':
+    - generic: "Отклики: 3"
+  - heading "Бэкенд-разработчик в платежи" [level=4]
+  - generic: "Новых откликов: 1"
+  - paragraph: Бэкенд-разработка · Middle · 200 000 – 280 000 ₽ · от 06.10.2026
+  - button "Изменить":
+    - generic: Изменить
+  - 'button "Отклики: 3"':
+    - generic: "Отклики: 3"
