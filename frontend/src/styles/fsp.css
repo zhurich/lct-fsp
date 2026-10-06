@@ -1,0 +1,181 @@
+/* Правила дизайн-системы ФСП, которые не выражаются настройками темы Mantine. */
+
+body {
+  -webkit-font-smoothing: antialiased;
+  font-variant-ligatures: contextual;
+}
+
+::selection {
+  background: var(--fsp-blue);
+  color: #fff;
+}
+
+/* Фокус — кольцо 3px синего 35% вместо контура. */
+:focus-visible {
+  outline: none !important;
+  box-shadow: var(--focus-ring);
+}
+
+/* Заголовки: Medium с отрицательным трекингом; заголовок страницы — синий, как в брендбуке. */
+.mantine-Title-root {
+  letter-spacing: var(--ls-heading);
+  text-wrap: balance;
+}
+.mantine-Title-root[data-order='2'] {
+  color: var(--text-brand);
+}
+
+/* Надстрочная подпись: единственное место, где допустим капс. */
+.fsp-overline {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: var(--ls-overline);
+  text-transform: uppercase;
+}
+
+/* Кнопки: нажатие — сдвиг на 1px вниз; контурная при наведении заливается тёмным. */
+.mantine-Button-root {
+  transition:
+    background-color var(--dur-fast) var(--ease-standard),
+    color var(--dur-fast) var(--ease-standard),
+    border-color var(--dur-fast) var(--ease-standard);
+}
+.mantine-Button-root:active:not([data-disabled]) {
+  transform: translateY(1px);
+}
+.mantine-Button-root[data-variant='default'] {
+  border: var(--border-width-strong) solid var(--border-strong);
+  color: var(--text-primary);
+}
+.mantine-Button-root[data-variant='default']:hover:not([data-disabled]) {
+  background: var(--ink-900);
+  color: #fff;
+}
+
+/* Поля: граница 1.5px, при фокусе — синяя с кольцом. */
+.mantine-Input-input {
+  border-width: var(--border-width-strong);
+  transition:
+    border-color var(--dur-fast) var(--ease-standard),
+    box-shadow var(--dur-fast) var(--ease-standard);
+}
+.mantine-Input-input:hover:not(:focus):not([data-error]) {
+  border-color: var(--gray-400);
+}
+.mantine-Input-input:focus,
+.mantine-Input-input:focus-within {
+  border-color: var(--fsp-blue);
+  box-shadow: var(--focus-ring);
+}
+
+/* Карточки: белые с тонкой границей, без тени в покое. */
+.mantine-Paper-root[data-with-border] {
+  border-color: var(--border-subtle);
+}
+a.mantine-Paper-root[data-with-border] {
+  transition:
+    border-color var(--dur-base) var(--ease-standard),
+    transform var(--dur-base) var(--ease-standard),
+    box-shadow var(--dur-base) var(--ease-standard);
+}
+a.mantine-Paper-root[data-with-border]:hover {
+  border-color: var(--border-strong);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+/* Навигация кабинета: активный раздел — синий полужирный с меткой слева. */
+.fsp-nav .mantine-NavLink-root {
+  border-radius: var(--radius-sm);
+  font-weight: 500;
+  color: var(--text-primary);
+}
+.fsp-nav .mantine-NavLink-root:hover {
+  background: var(--surface-muted);
+}
+.fsp-nav .mantine-NavLink-root[data-active] {
+  background: transparent;
+  color: var(--text-brand);
+  box-shadow: inset 3px 0 0 var(--fsp-blue);
+}
+.fsp-nav .mantine-NavLink-root[data-active] .mantine-NavLink-label {
+  font-weight: 700;
+}
+
+/* Таблицы: шапка — приглушённая подпись. */
+.mantine-Table-th {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+/* Уведомления — тёмные, как тосты в системе. */
+.mantine-Notification-root {
+  background: var(--surface-inverse);
+  box-shadow: var(--shadow-lg);
+}
+.mantine-Notification-title {
+  color: var(--text-inverse);
+  font-weight: 700;
+}
+.mantine-Notification-description {
+  color: var(--text-inverse-secondary);
+}
+.mantine-Notification-root:not(:has(.mantine-Notification-title)) .mantine-Notification-description {
+  color: var(--text-inverse);
+}
+.mantine-Notification-closeButton {
+  color: var(--gray-400);
+}
+.mantine-Notification-closeButton:hover {
+  background: var(--ink-700);
+  color: #fff;
+}
+
+/* Экран входа: тёмная половина с фирменными линиями-связями. */
+.fsp-auth {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  min-height: 100vh;
+}
+.fsp-auth__brand {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 48px;
+  padding: 48px;
+  overflow: hidden;
+  background: var(--surface-inverse);
+  color: var(--text-inverse);
+}
+.fsp-auth__lines {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  width: min(42%, 300px);
+  opacity: 0.5;
+  pointer-events: none;
+}
+.fsp-auth__title {
+  margin: 0;
+  font-size: clamp(34px, 4vw, 56px);
+  font-weight: 500;
+  line-height: var(--lh-tight);
+  letter-spacing: var(--ls-display);
+  text-wrap: balance;
+}
+.fsp-auth__form {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 24px;
+}
+@media (max-width: 62em) {
+  .fsp-auth {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .fsp-auth__brand {
+    display: none;
+  }
+}
