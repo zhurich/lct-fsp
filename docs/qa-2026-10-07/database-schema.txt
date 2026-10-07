@@ -1,0 +1,3 @@
+Configured local SQLite database schema was inspected read-only.
+12 tables present; all 12 ORM-mapped tables and columns are present.
+No application writes were made to dev.db.

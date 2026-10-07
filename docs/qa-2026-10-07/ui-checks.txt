@@ -1,0 +1,8 @@
+Manual checks against isolated 127.0.0.1:8110 demo server and synthetic ui.db:
+- Candidate password login opens assessment onboarding.
+- Employer password login opens needs page; candidate bank renders and includes the unverified-grade block.
+- FSP ID demo login creates/opens candidate account; settings page displays linked FSP ID and achievements.
+- Candidate profile and settings render, including PDF resume import, visibility and consent sections.
+- Logging out in one tab redirects a second tab to /login instead of leaving a stale cabinet/loader.
+- At viewport 390x844, profile document measured 375px wide (no horizontal overflow).
+- Browser console returned no errors.

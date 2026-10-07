@@ -1,0 +1,38 @@
+C:\Users\Денис\Desktop\lct-fsp\backend\.venv\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+  from starlette.testclient import TestClient as TestClient  # noqa
+{"name": "registration_verification_login", "status": "PASS", "candidate_id": 1, "employer_id": 2}
+{"name": "auth_and_role_matrix", "status": "PASS", "anonymous": {"/candidate/profile": 401, "/candidate/assessment": 401, "/candidate/invitations": 401, "/candidate/vacancies": 401, "/candidate/applications": 401, "/candidate/challenges": 401, "/candidate/answers": 401, "/employer/company": 401, "/employer/candidates": 401, "/employer/needs": 401, "/employer/invitations": 401, "/employer/vacancies": 401, "/employer/challenges": 401}, "wrong_role": {"/candidate/profile": 403, "/candidate/assessment": 403, "/candidate/invitations": 403, "/candidate/vacancies": 403, "/candidate/applications": 403, "/candidate/challenges": 403, "/candidate/answers": 403, "/employer/company": 403, "/employer/candidates": 403, "/employer/needs": 403, "/employer/invitations": 403, "/employer/vacancies": 403, "/employer/challenges": 403}}
+{"name": "answer_key_not_exposed", "status": "PASS", "keys": ["text", "code", "options"]}
+{"name": "assessment_ownership", "status": "PASS", "http": 404}
+C:\Users\Денис\Desktop\lct-fsp\backend\.venv\Lib\site-packages\fastapi\telemetry\_api.py:240: StarletteDeprecationWarning: 'HTTP_422_UNPROCESSABLE_ENTITY' is deprecated. Use 'HTTP_422_UNPROCESSABLE_CONTENT' instead.
+  return function(**arguments)
+{"name": "invalid_answer_consumes_question", "status": "PASS", "http": 422, "position": null}
+{"name": "valid_first_answer", "status": "PASS", "http": 200}
+{"name": "sequential_answer_replay", "status": "PASS", "http": 409}
+{"name": "assessment_full_completion", "status": "PASS", "category": {"specialization": "backend", "grade": "junior", "score": 0.93, "upgrade_offer": true, "assigned_at": "2026-10-07T00:27:37.890006Z"}, "result": {"id": 1, "specialization": "backend", "grade": "junior", "status": "passed", "score": 0.93, "estimated_grade": "senior", "correct_count": 15, "total": 15, "started_at": "2026-10-07T00:27:37.609356Z", "expires_at": "2026-10-07T00:57:37.609356Z", "finished_at": "2026-10-07T00:27:37.890006Z"}}
+{"name": "grade_cooldown", "status": "PASS", "http": 409}
+{"name": "bank_contact_and_hidden_field_protection", "status": "PASS", "experience": null}
+{"name": "invitation_contact_handshake", "status": "PASS", "before": null, "foreign": 404, "accept": 200, "after": {"full_name": "Тестовый Кандидат", "email": "audit-candidate@example.com", "phone": "+7 999 000 00 01", "telegram": ""}, "repeat": 409}
+{"name": "hidden_experience_leaks_in_applications", "status": "PASS", "hidden_fields": ["experience"], "bank_value": null, "application_value": null}
+{"name": "employer_resource_ownership", "status": "PASS", "http": {"need_read": 404, "need_write": 404, "need_delete": 404, "applications": 404, "application_accept": 404}}
+{"name": "unpublished_candidate_not_searchable", "status": "PASS", "present": false, "invite": 404}
+{"name": "blank_cross_specialization_challenge_answer", "status": "PASS", "offered": false, "category": "backend", "challenge_spec": "mobile", "http": 422, "answer": {"detail": [{"loc": ["body", "text"], "msg": "Текст: слишком короткое значение (не меньше 50 симв.)", "type": "string_too_short"}]}}
+{"name": "whitespace_required_fields", "status": "PASS", "http": {"need": 422, "vacancy": 422, "challenge": 422, "invitation": 422}}
+{"name": "integer_overflow_500", "status": "PASS", "http": {"profile": 422, "need": 422, "vacancy": 422, "resource_id": 422}}
+{"name": "logout_token_replay", "status": "BUG", "http": 200, "ttl_min": 720}
+{"name": "default_secret_impersonation", "status": "INFO", "default_secret_active": false, "http": 200}
+{"name": "signed_invalid_subject_500", "status": "PASS", "http": 401, "precondition": "valid signature, not exploitable with random unsigned token"}
+{"name": "smtp_failure_partial_registration", "status": "PASS", "first": 503, "retry": 201}
+{"name": "verification_mail_no_throttle", "status": "PASS", "requests": 30, "http": [429]}
+C:\Users\Денис\Desktop\lct-fsp\backend\.venv\Lib\site-packages\fastapi\telemetry\_api.py:240: StarletteDeprecationWarning: 'HTTP_413_REQUEST_ENTITY_TOO_LARGE' is deprecated. Use 'HTTP_413_CONTENT_TOO_LARGE' instead.
+  return function(**arguments)
+{"name": "pdf_basic_inputs", "status": "PASS", "corrupt": 422, "oversize": 413, "export": 200, "bytes": 43639}
+{"name": "unbounded_tag_length", "status": "PASS", "accepted_chars": 20000, "http": 422}
+{"name": "concurrent_duplicate_invitations", "status": "PASS", "count": 1, "http": [409, 201], "scheduling": "barrier after existing-invitation SELECT"}
+{"name": "concurrent_duplicate_applications", "status": "PASS", "count": 1, "http": [409, 201], "scheduling": "barrier after duplicate count SELECT"}
+{"name": "free_text_contact_disclosure", "status": "PASS", "about": "Контакт: [контакт скрыт], телефон [контакт скрыт]", "context": "structured contacts remain protected; about has no warning/redaction"}
+{"name": "challenge_without_profile_or_category", "status": "INFO", "http": 404}
+{"name": "account_erasure", "status": "PASS", "http": 204, "remaining": {"assessments": 0, "candidate_categories": 0, "candidate_profiles": 0, "challenges": 0, "companies": 0, "invitations": 0, "needs": 0, "vacancies": 0, "applications": 0, "challenge_answers": 0}}
+{"name": "education_counted_as_experience", "status": "PASS", "experience_years": 0.0}
+{"name": "ranking_strength_overrides_skill_fit", "status": "PASS", "missing_one_skill": 94.9, "all_skills": 97.0}
+{"name": "summary", "status": "INFO", "counts": {"PASS": 28, "BUG": 1, "INFO": 2}, "database": "sqlite:///C:/Users/Денис/Desktop/lct-fsp/docs/qa-2026-10-07/audit-6de41ddd45fd4086bc0b5a31c19d44d6.db"}

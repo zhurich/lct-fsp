@@ -1,0 +1,4 @@
+Command: npm run build (frontend)
+Result: TypeScript check and Vite build succeeded.
+Vite 6.4.3; 923 modules transformed.
+Main bundle: 698.74 kB minified / 214.08 kB gzip; chunk-size warning threshold is 500 kB.

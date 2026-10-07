@@ -1,0 +1,62 @@
+[
+  {
+    "name": "sql_injection_login",
+    "status": "PASS",
+    "http": [
+      401,
+      401,
+      401,
+      401,
+      401
+    ]
+  },
+  {
+    "name": "login_throttle",
+    "status": "INFO",
+    "count": 30,
+    "http": [
+      401,
+      429
+    ]
+  },
+  {
+    "name": "cross_origin_form_and_preflight",
+    "status": "PASS",
+    "form_post": 405,
+    "form_put": 422,
+    "preflight": 405,
+    "allow_origin": null
+  },
+  {
+    "name": "encrypted_pdf",
+    "status": "PASS",
+    "http": 422
+  },
+  {
+    "name": "nonfinite_experience",
+    "status": "PASS",
+    "http": [
+      422,
+      422,
+      422
+    ]
+  },
+  {
+    "name": "email_case_normalization",
+    "status": "PASS",
+    "http": 200
+  },
+  {
+    "name": "cookie_flags",
+    "status": "PASS",
+    "httponly": true,
+    "samesite_lax": true,
+    "secure": false,
+    "context": "secure false in local HTTP configuration"
+  },
+  {
+    "name": "unverified_login",
+    "status": "PASS",
+    "http": 403
+  }
+]
