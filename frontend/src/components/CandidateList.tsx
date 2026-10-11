@@ -104,7 +104,7 @@ const CardView = memo(function CardView({ card, onInvite }: { card: CandidateCar
                 .join(' · ')}
             </Text>
           </div>
-          <Stack gap={6} align="flex-end">
+          <Stack gap={6} align="flex-end" ml="auto">
             {card.score !== null && (
               <Badge size="xl" variant="light" color={card.score >= 70 ? 'green' : card.score >= 50 ? 'blue' : 'gray'}>
                 Оценка {Math.round(card.score)}
