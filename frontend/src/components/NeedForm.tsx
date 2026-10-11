@@ -18,7 +18,7 @@ import { useState } from 'react'
 
 import { api, type Need, type NeedInput, type ParsedNeed } from '../api'
 import { notifyError } from '../notify'
-import { NOTE_BELOW, SALARY_NOTE, toOptions, useReference } from '../reference'
+import { toOptions, useReference } from '../reference'
 
 const EMPTY: NeedInput = {
   title: '',
@@ -142,8 +142,6 @@ export default function NeedForm({ need, onSaved }: { need?: Need; onSaved: (nee
           />
           <NumberInput
             label="Зарплата от, ₽"
-            description={SALARY_NOTE}
-            inputWrapperOrder={NOTE_BELOW}
             min={0}
             step={10000}
             thousandSeparator=" "
@@ -152,8 +150,6 @@ export default function NeedForm({ need, onSaved }: { need?: Need; onSaved: (nee
           />
           <NumberInput
             label="Зарплата до, ₽"
-            description={SALARY_NOTE}
-            inputWrapperOrder={NOTE_BELOW}
             min={0}
             step={10000}
             thousandSeparator=" "

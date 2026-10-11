@@ -35,12 +35,10 @@ export const FSP_LEVEL: Record<string, string> = {
   federal: 'всероссийский уровень',
 }
 
-/** Все суммы на платформе — до вычета НДФЛ; пометка стоит у каждого поля и каждой вилки. */
-export const SALARY_NOTE = 'до вычета НДФЛ'
 /** Пояснение под полем, а не над ним: поле остаётся на одной линии с соседними в строке. */
 export const NOTE_BELOW: ('label' | 'input' | 'description' | 'error')[] = ['label', 'input', 'description', 'error']
 
 export const formatSalary = (from: number, to: number) =>
-  `${from.toLocaleString('ru-RU')} – ${to.toLocaleString('ru-RU')} ₽ ${SALARY_NOTE}`
+  `${from.toLocaleString('ru-RU')} – ${to.toLocaleString('ru-RU')} ₽`
 
 export const formatDate = (iso: string) => new Date(iso).toLocaleDateString('ru-RU')

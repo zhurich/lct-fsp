@@ -30,7 +30,7 @@ import {
 } from '../api'
 import Pending from '../components/Pending'
 import { notifyError, notifyOk } from '../notify'
-import { NOTE_BELOW, SALARY_NOTE } from '../reference'
+import { NOTE_BELOW } from '../reference'
 
 const EMPTY: CandidateProfile = {
   full_name: '',
@@ -202,7 +202,7 @@ export default function CandidateProfilePage() {
                   {...form.getInputProps('work_formats')}
                 />
                 <NumberInput
-                  label={`Ожидаемая зарплата, ₽ (${SALARY_NOTE})`}
+                  label="Ожидаемая зарплата, ₽"
                   description="Работодателю не показывается"
                   inputWrapperOrder={NOTE_BELOW}
                   min={0}

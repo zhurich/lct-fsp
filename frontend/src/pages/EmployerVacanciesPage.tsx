@@ -23,7 +23,7 @@ import { useState } from 'react'
 import { api, type EmployerVacancy, type VacancyApplication, type VacancyInput } from '../api'
 import Pending from '../components/Pending'
 import { notifyError, notifyOk } from '../notify'
-import { formatDate, formatSalary, INVITATION_STATUS, NOTE_BELOW, SALARY_NOTE, toOptions, useReference } from '../reference'
+import { formatDate, formatSalary, INVITATION_STATUS, toOptions, useReference } from '../reference'
 
 const EMPTY: VacancyInput = {
   title: '',
@@ -221,8 +221,8 @@ function VacancyForm({ vacancy, onDone }: { vacancy?: EmployerVacancy; onDone: (
         <SimpleGrid cols={{ base: 1, sm: 2 }}>
           <Select label="Специализация" data={toOptions(reference?.specializations)} {...form.getInputProps('specialization')} />
           <Select label="Грейд" data={toOptions(reference?.grades)} {...form.getInputProps('grade')} />
-          <NumberInput label="Зарплата от, ₽" description={SALARY_NOTE} inputWrapperOrder={NOTE_BELOW} min={0} step={10000} thousandSeparator=" " {...form.getInputProps('salary_from')} />
-          <NumberInput label="Зарплата до, ₽" description={SALARY_NOTE} inputWrapperOrder={NOTE_BELOW} min={0} step={10000} thousandSeparator=" " {...form.getInputProps('salary_to')} />
+          <NumberInput label="Зарплата от, ₽" min={0} step={10000} thousandSeparator=" " {...form.getInputProps('salary_from')} />
+          <NumberInput label="Зарплата до, ₽" min={0} step={10000} thousandSeparator=" " {...form.getInputProps('salary_to')} />
         </SimpleGrid>
         <TagsInput label="Стек" data={reference?.skills} {...form.getInputProps('stack')} />
         <MultiSelect label="Формат работы" data={toOptions(reference?.work_formats)} {...form.getInputProps('work_formats')} />

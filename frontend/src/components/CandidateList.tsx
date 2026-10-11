@@ -7,6 +7,7 @@ import {
   NumberInput,
   Paper,
   Progress,
+  Select,
   SimpleGrid,
   Stack,
   Text,
@@ -18,12 +19,17 @@ import { useForm } from '@mantine/form'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { memo, useState } from 'react'
 
-import { api, type CandidateCard, type Company } from '../api'
+import { api, type CandidateCard, type Company, type EmployerVacancy, type Need } from '../api'
 import { notifyError, notifyOk } from '../notify'
-import { FSP_LEVEL, formatDate, INVITATION_STATUS, NOTE_BELOW, SALARY_NOTE, useReference } from '../reference'
+import { FSP_LEVEL, formatDate, INVITATION_STATUS, useReference } from '../reference'
 import Pending from './Pending'
 
-export type InviteDefaults = { title?: string; salary_from?: number | null; salary_to?: number | null }
+export type InviteDefaults = {
+  title?: string
+  message?: string
+  salary_from?: number | null
+  salary_to?: number | null
+}
 
 // Карточки показываются порциями: вся база на одной странице — десятки тысяч узлов DOM.
 const PAGE_SIZE = 20
@@ -191,22 +197,60 @@ const CardView = memo(function CardView({ card, onInvite }: { card: CandidateCar
 })
 
 type InviteProps = { candidate: CandidateCard; defaults?: InviteDefaults; onDone: () => void }
+/** Готовый текст предложения: сохранённая потребность или вакансия работодателя. */
+type InviteSource = { value: string; label: string; fill: Required<InviteDefaults> }
 
 function InviteForm(props: InviteProps) {
   const company = useQuery({ queryKey: ['company'], queryFn: () => api<Company>('/employer/company') })
-  if (!company.data) return <Pending queries={[company]} />
+  const needs = useQuery({ queryKey: ['needs'], queryFn: () => api<Need[]>('/employer/needs') })
+  const vacancies = useQuery({
+    queryKey: ['employer-vacancies'],
+    queryFn: () => api<EmployerVacancy[]>('/employer/vacancies'),
+  })
+  if (!company.data || !needs.data || !vacancies.data) return <Pending queries={[company, needs, vacancies]} />
   // Способ связи по умолчанию — контакты из профиля компании.
   const { contact_person, contact_email, contact_phone } = company.data
   const contact = [contact_person, contact_email, contact_phone].filter(Boolean).join(', ')
-  return <InviteFields {...props} defaultContact={contact} />
+  const salary = (value: number | string | null) => (typeof value === 'number' ? value : null)
+  const sources = [
+    {
+      group: 'Потребности',
+      items: needs.data.map((need) => ({
+        value: `need-${need.id}`,
+        label: need.title,
+        fill: { title: need.title, message: need.text, salary_from: need.salary_from, salary_to: need.salary_to },
+      })),
+    },
+    {
+      group: 'Вакансии',
+      items: vacancies.data.map((vacancy) => ({
+        value: `vacancy-${vacancy.id}`,
+        label: vacancy.title,
+        fill: {
+          title: vacancy.title,
+          message: vacancy.description,
+          salary_from: salary(vacancy.salary_from),
+          salary_to: salary(vacancy.salary_to),
+        },
+      })),
+    },
+  ].filter((group) => group.items.length > 0)
+  return <InviteFields {...props} defaultContact={contact} sources={sources} />
 }
 
-function InviteFields({ candidate, defaults, onDone, defaultContact }: InviteProps & { defaultContact: string }) {
+function InviteFields({
+  candidate,
+  defaults,
+  onDone,
+  defaultContact,
+  sources,
+}: InviteProps & { defaultContact: string; sources: { group: string; items: InviteSource[] }[] }) {
   const queryClient = useQueryClient()
+  const [source, setSource] = useState<string | null>(null)
   const form = useForm({
     initialValues: {
       title: defaults?.title ?? '',
-      message: '',
+      message: defaults?.message ?? '',
       salary_from: (defaults?.salary_from ?? '') as number | string,
       salary_to: (defaults?.salary_to ?? '') as number | string,
       contact: defaultContact,
@@ -243,6 +287,28 @@ function InviteFields({ candidate, defaults, onDone, defaultContact }: InvitePro
         <Text size="sm" c="dimmed">
           Кандидат увидит название вашей компании, предложение и зарплатную вилку до начала общения.
         </Text>
+        {sources.length > 0 && (
+          <Select
+            label="Заполнить по потребности или вакансии"
+            description="Должность, описание и вилка подставятся в форму — их можно поправить перед отправкой"
+            placeholder="Выберите, откуда взять текст"
+            data={sources}
+            value={source}
+            onChange={(value) => {
+              setSource(value)
+              const fill = sources.flatMap((group) => group.items).find((item) => item.value === value)?.fill
+              if (!fill) return
+              // Способ связи не трогаем: он берётся из профиля компании и от потребности не зависит.
+              form.setValues({
+                title: fill.title,
+                message: fill.message,
+                salary_from: fill.salary_from ?? '',
+                salary_to: fill.salary_to ?? '',
+              })
+              form.clearErrors()
+            }}
+          />
+        )}
         <TextInput label="Должность" placeholder="Например, Python-разработчик" {...form.getInputProps('title')} />
         <Textarea
           label="Описание предложения"
@@ -254,8 +320,6 @@ function InviteFields({ candidate, defaults, onDone, defaultContact }: InvitePro
         <SimpleGrid cols={{ base: 1, sm: 2 }}>
           <NumberInput
             label="Зарплата от, ₽"
-            description={SALARY_NOTE}
-            inputWrapperOrder={NOTE_BELOW}
             min={0}
             step={10000}
             thousandSeparator=" "
@@ -263,8 +327,6 @@ function InviteFields({ candidate, defaults, onDone, defaultContact }: InvitePro
           />
           <NumberInput
             label="Зарплата до, ₽"
-            description={SALARY_NOTE}
-            inputWrapperOrder={NOTE_BELOW}
             min={0}
             step={10000}
             thousandSeparator=" "

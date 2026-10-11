@@ -45,7 +45,13 @@ export default function NeedPage() {
   }
   if (!matches.data) return <Pending queries={[matches]} />
   const { need, categories, total, candidates, unverified } = matches.data
-  const inviteDefaults = { title: need.title, salary_from: need.salary_from, salary_to: need.salary_to }
+  // Приглашение из подборки сразу заполнено по её потребности.
+  const inviteDefaults = {
+    title: need.title,
+    message: need.text,
+    salary_from: need.salary_from,
+    salary_to: need.salary_to,
+  }
   const filtered = candidates.length !== total
 
   return (
