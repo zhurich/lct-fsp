@@ -8,6 +8,12 @@
 
 ## Адреса и демо-входы
 
+Развёрнутый стенд: **http://89.110.105.165** (описание API — http://89.110.105.165/api/docs). База наполнена
+демонстрационными данными, входы — в таблице ниже. Стенд работает в режиме проверки: регистрация без письма
+с подтверждением, кандидат может сбросить свои попытки и пройти тест заново.
+
+Для своего запуска:
+
 | Что | Docker | Локальный запуск |
 |---|---|---|
 | Приложение | http://localhost:8080 | http://localhost:5183 |
@@ -46,6 +52,7 @@
 - `backend/tests` — автоматические тесты.
 - `frontend` — веб-приложение для обеих ролей на React, TypeScript и Mantine.
 - `docker-compose.yml` — PostgreSQL, backend, frontend (nginx) и Mailpit для писем.
+- `compose.server.yml` — то же для стенда на небольшом сервере, с заранее собранным фронтендом.
 
 ## Запуск в Docker
 
@@ -58,6 +65,20 @@ docker compose exec backend python -m scripts.seed --reset   # демонстр�
 - Приложение: http://localhost:8080
 - Описание API: http://localhost:8080/api/docs
 - Письма с подтверждением регистрации: http://localhost:8025
+
+### Стенд на небольшом сервере
+
+`compose.server.yml` — вариант для VPS с 1 ГБ памяти, по нему развёрнут стенд. Фронтенд в Docker не собирается
+(сборка Node в такую память не помещается): `frontend/dist` собирается заранее и отдаётся готовым nginx. Сайт
+на 80-м порту, Mailpit нет (письма пишутся в журнал бэкенда), контейнеры поднимаются после перезагрузки.
+
+```bash
+npm --prefix frontend ci && npm --prefix frontend run build   # на своей машине, затем скопировать на сервер
+# на сервере, в .env: SECRET_KEY, POSTGRES_PASSWORD, PUBLIC_URL=http://<адрес>, DEMO_MODE=true,
+# COMPOSE_FILE=compose.server.yml
+docker compose up --build -d
+docker compose exec -T backend python -m scripts.seed --reset
+```
 
 ## Локальный запуск без Docker
 

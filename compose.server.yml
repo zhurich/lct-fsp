@@ -1,0 +1,56 @@
+# Стенд на VPS с 1 ГБ памяти. Отличия от docker-compose.yml из репозитория: фронтенд собран заранее и
+# отдаётся готовым nginx (сборка Node на сервере не помещается в память), сайт на 80-м порту, Mailpit нет
+# (письма пишутся в журнал бэкенда), контейнеры поднимаются после перезагрузки.
+name: fsp-career
+
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: fsp
+      POSTGRES_USER: fsp
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fsp -d fsp"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    # Адрес клиента берётся из X-Forwarded-For, но только от nginx из этой же сети: иначе лимиты частоты
+    # считали бы всех посетителей одним источником.
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers", "--forwarded-allow-ips", "172.30.0.0/24"]
+    environment:
+      DATABASE_URL: postgresql+psycopg://fsp:${POSTGRES_PASSWORD:?}@db:5432/fsp
+      SECRET_KEY: ${SECRET_KEY:?}
+      FRONTEND_URL: ${PUBLIC_URL:?}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      DEMO_MODE: ${DEMO_MODE:-false}
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./frontend/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./frontend/dist:/usr/share/nginx/html:ro
+    depends_on:
+      - backend
+
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 172.30.0.0/24
+
+volumes:
+  db_data:
