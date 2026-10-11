@@ -85,6 +85,23 @@ SKILLS: dict[str, tuple[list[str], list[str]]] = {
     "Confluence": (["confluence"], ["analyst"]),
 }
 
+# Близкие технологии: владение одной частично закрывает требование другой из той же группы
+# (знает MySQL — быстро освоит PostgreSQL). Группы намеренно узкие: только прямые аналоги.
+_RELATED_GROUPS: list[set[str]] = [
+    {"PostgreSQL", "MySQL"},
+    {"Django", "FastAPI", "Flask"},
+    {"React", "Vue", "Angular"},
+    {"React", "Next.js"},
+    {"JavaScript", "TypeScript"},
+    {"Java", "Kotlin"},
+    {"C#", ".NET"},
+    {"Kafka", "RabbitMQ"},
+    {"Selenium", "Playwright", "Cypress"},
+    {"pytest", "JUnit"},
+    {"PyTorch", "TensorFlow"},
+    {"Terraform", "Ansible"},
+]
+
 _BY_ALIAS = {alias: name for name, (aliases, _) in SKILLS.items() for alias in [name.lower(), *aliases]}
 # Длинные варианты ищутся первыми, чтобы «react native» не распознался как React.
 # Границы слова свои: стандартная \b не подходит для C#, C++ и .NET.
@@ -103,6 +120,12 @@ def normalize_skill(raw: str) -> str:
 def skill_key(raw: str) -> str:
     """Ключ для сравнения технологий без учёта регистра и варианта написания."""
     return normalize_skill(raw).lower()
+
+
+def related_skills(raw: str) -> set[str]:
+    """Ключи технологий, близких к данной; сама технология в набор не входит."""
+    name = normalize_skill(raw)
+    return {other.lower() for group in _RELATED_GROUPS if name in group for other in group if other != name}
 
 
 def extract_skills(text: str) -> list[str]:

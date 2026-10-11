@@ -28,6 +28,13 @@ export type InviteDefaults = { title?: string; salary_from?: number | null; sala
 // Карточки показываются порциями: вся база на одной странице — десятки тысяч узлов DOM.
 const PAGE_SIZE = 20
 
+// Знак довода в объяснении выдачи. Красный не используется: на экране он один, и это не оценка кандидата.
+const REASON_MARK = {
+  plus: { sign: '+', color: 'green' },
+  minus: { sign: '−', color: 'dark' },
+  info: { sign: '·', color: 'dimmed' },
+} as const
+
 /** Список карточек кандидатов с приглашением; общий для подборки и банка. */
 export default function CandidateList({ cards, inviteDefaults }: { cards: CandidateCard[]; inviteDefaults?: InviteDefaults }) {
   const { specName, gradeName } = useReference()
@@ -125,11 +132,16 @@ const CardView = memo(function CardView({ card, onInvite }: { card: CandidateCar
             <Text size="sm" fw={500} mb={4}>
               {card.verified ? 'Почему в подборке' : 'Статус и соответствие запросу'}
             </Text>
-            <List size="sm">
+            <Stack gap={4}>
               {card.reasons.map((reason) => (
-                <List.Item key={reason}>{reason}</List.Item>
+                <Group key={reason.text} gap={8} wrap="nowrap" align="flex-start">
+                  <Text size="sm" fw={700} w={10} ta="center" c={REASON_MARK[reason.kind].color}>
+                    {REASON_MARK[reason.kind].sign}
+                  </Text>
+                  <Text size="sm">{reason.text}</Text>
+                </Group>
               ))}
-            </List>
+            </Stack>
           </div>
           {card.breakdown.length > 0 && (
           <div>

@@ -268,8 +268,9 @@ function TestForm({ attempt }: { attempt: Active }) {
   return (
     <Stack>
       <Alert title={`Тест: ${specName(attempt.specialization)} · ${gradeName(attempt.grade)}`}>
-        {attempt.total} заданий по одному, вернуться к предыдущему нельзя. Сложность следующего задания
-        зависит от ваших ответов. Завершите тест до {deadline} — позже попытка не засчитается.
+        От {attempt.min_total} до {attempt.total} заданий по одному, вернуться к предыдущему нельзя. Тест
+        заканчивается, как только результат становится однозначным. Завершите его до {deadline} — позже
+        попытка не засчитается.
       </Alert>
       {/* Карточка не ниже заданной высоты: кнопки не прыгают от задания к заданию. Длинное задание с кодом
           показывается целиком, без прокрутки, — карточка подрастает. */}
@@ -277,7 +278,7 @@ function TestForm({ attempt }: { attempt: Active }) {
         <Stack gap="sm" style={{ flex: 1 }}>
           <Group justify="space-between">
             <Text size="sm" c="dimmed">
-              Задание {attempt.position} из {attempt.total}
+              Задание {attempt.position}, всего не больше {attempt.total}
             </Text>
             <Progress value={((attempt.position - 1) / attempt.total) * 100} w={160} aria-label="Прогресс теста" />
           </Group>

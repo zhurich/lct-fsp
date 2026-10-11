@@ -12,8 +12,8 @@ from app.core.config import settings
 from app.core.db import get_db, utcnow
 from app.core.deps import current_candidate
 from app.core.schemas import PathId
-from app.modules.assessment import adaptive, bank
-from app.modules.assessment.models import Assessment, AttemptStatus, CandidateCategory, ItemExposure
+from app.modules.assessment import adaptive, drift
+from app.modules.assessment.models import Assessment, AttemptStatus, CandidateCategory, ItemExposure, ItemFlag
 from app.modules.assessment.schemas import (
     ActiveAttemptOut,
     AnswerIn,
@@ -31,7 +31,7 @@ router = APIRouter(prefix="/candidate/assessment", tags=["Тестировани
 
 def _attempt_fields(attempt: Assessment) -> dict:
     # У просроченной попытки оценки уровня нет: она не доведена до конца.
-    completed = attempt.finished_at is not None and len(attempt.questions) == adaptive.TEST_LENGTH
+    completed = attempt.finished_at is not None and adaptive.is_complete(attempt.questions)
     return {
         "id": attempt.id,
         "specialization": attempt.specialization,
@@ -40,7 +40,8 @@ def _attempt_fields(attempt: Assessment) -> dict:
         "score": attempt.score,
         "estimated_grade": adaptive.grade_of(attempt.theta) if completed else None,
         "correct_count": attempt.correct_count,
-        "total": adaptive.TEST_LENGTH,
+        # У завершённой попытки — сколько заданий было выдано, у идущей — предел длины теста.
+        "total": len(attempt.questions) if attempt.finished_at else adaptive.MAX_LENGTH,
         "started_at": attempt.started_at,
         "expires_at": attempt.expires_at,
         "finished_at": attempt.finished_at,
@@ -73,20 +74,17 @@ def _category_lock(category: CandidateCategory | None, now: datetime) -> datetim
 
 
 def _serve_next(db: Session, attempt: Assessment) -> None:
-    """Подбирает следующее задание под текущую оценку уровня и добавляет его в попытку."""
+    """Подбирает следующее задание у границы заявленного грейда и добавляет его в попытку."""
     rng = random.Random()
     used = {question["item_id"] for question in attempt.questions}
-    candidates = [
-        item
-        for item in bank.pool(attempt.specialization, adaptive.is_specialized(len(attempt.questions)))
-        if item.id not in used
-    ]
+    flagged = set(db.scalars(select(ItemFlag.item_id)))
+    candidates = adaptive.position_pool(attempt.specialization, len(attempt.questions), used, flagged)
     earlier = db.scalars(
         select(Assessment.questions).where(Assessment.user_id == attempt.user_id, Assessment.id != attempt.id)
     )
     seen = {question["item_id"] for questions in earlier for question in questions}
     exposure = dict(db.execute(select(ItemExposure.item_id, ItemExposure.shown)).all())
-    item = adaptive.pick_item(candidates, attempt.theta, exposure, seen, rng)
+    item = adaptive.pick_item(candidates, adaptive.GRADE_CUTS[attempt.grade], exposure, seen, rng)
 
     _count_exposure(db, item.id)
     # JSON-колонка не отслеживает изменения на месте, поэтому список заменяется целиком.
@@ -165,7 +163,10 @@ def _state(db: Session, user_id: int) -> AssessmentState:
     return AssessmentState(
         category=category,
         active=ActiveAttemptOut(
-            **_attempt_fields(active), position=len(active.questions), question=active.questions[-1]
+            **_attempt_fields(active),
+            position=len(active.questions),
+            min_total=adaptive.MIN_LENGTH,
+            question=active.questions[-1],
         )
         if active
         else None,
@@ -266,13 +267,15 @@ def answer(
     questions = [*attempt.questions[:-1], {**attempt.questions[-1], "answer": data.answer}]
     try:
         attempt.questions = questions
-        attempt.theta, attempt.se = adaptive.estimate(
-            [(question["a"], question["b"], question["answer"] == question["correct"]) for question in questions]
-        )
-        if len(questions) < adaptive.TEST_LENGTH:
-            _serve_next(db, attempt)
-        else:
+        responses = [
+            (question["a"], question["b"], question["answer"] == question["correct"]) for question in questions
+        ]
+        attempt.theta, attempt.se = adaptive.estimate(responses)
+        if adaptive.is_finished(responses, attempt.grade):
             _finish(db, attempt, now)
+            _flag_drifted(db, attempt)
+        else:
+            _serve_next(db, attempt)
         db.commit()
     except StaleDataError:
         # На это задание одновременно пришёл другой ответ и был сохранён первым.
@@ -296,6 +299,22 @@ def reset(user: User = Depends(current_candidate), db: Session = Depends(get_db)
     db.execute(delete(CandidateCategory).where(CandidateCategory.user_id == user.id))
     db.commit()
     return _state(db, user.id)
+
+
+def _flag_drifted(db: Session, attempt: Assessment) -> None:
+    """После завершённого теста сверяет профильные задания его специализации с ожидаемой решаемостью
+    и снимает с выдачи те, ответы на которые, судя по статистике, разошлись."""
+    finished = db.scalars(
+        select(Assessment.questions).where(
+            Assessment.specialization == attempt.specialization,
+            Assessment.finished_at.is_not(None),
+            Assessment.id != attempt.id,
+        )
+    ).all()
+    known = set(db.scalars(select(ItemFlag.item_id)))
+    for item in drift.analyze([*finished, attempt.questions]):
+        if item.flagged and item.item_id not in known:
+            db.add(ItemFlag(item_id=item.item_id, shown=item.shown, observed=item.observed, expected=item.expected))
 
 
 def _finish(db: Session, attempt: Assessment, now: datetime) -> None:

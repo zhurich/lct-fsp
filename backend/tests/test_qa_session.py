@@ -89,7 +89,8 @@ def test_unverified_grade_is_shown_below_verified_and_can_be_invited(client, out
     assert [card["candidate_id"] for card in bank] == [passed_id, failed_id]
     unverified = bank[1]
     assert unverified["verified"] is False and unverified["grade"] == "middle" and unverified["score"] is None
-    assert "не подтверждён" in unverified["reasons"][0] and unverified["breakdown"] == []
+    assert "не подтверждён" in unverified["reasons"][0]["text"] and unverified["breakdown"] == []
+    assert unverified["reasons"][0]["kind"] == "minus"
 
     need = {"title": "Мобильный разработчик", "specialization": "mobile", "grade": "middle", "stack": ["Swift"]}
     url = f"/api/employer/needs/{client.post('/api/employer/needs', json=need).json()['id']}/matches"

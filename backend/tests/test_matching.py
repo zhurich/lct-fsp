@@ -62,7 +62,18 @@ def test_ranking_orders_by_fit_then_profile_strength():
     adjacent = rank(request, candidate(grade="senior", test_score=0.8, stack=["Python", "PostgreSQL", "Kafka"]), NOW)
     assert full.score > partial.score and full.score > adjacent.score
     assert partial.matched_stack == ["Python", "PostgreSQL"]
-    assert any("нет: Kafka" in reason for reason in partial.reasons)
+    assert ("minus", "Нет в стеке: Kafka") in [(reason.kind, reason.text) for reason in partial.reasons]
+    assert ("plus", "Стек: 2 из 3 — Python, PostgreSQL") in [(reason.kind, reason.text) for reason in partial.reasons]
+
+    # Близкая технология закрывает требование наполовину: выше, чем без неё, но ниже точного совпадения.
+    near = rank(request, candidate(stack=["Python", "PostgreSQL", "RabbitMQ"]), NOW)
+    assert full.score > near.score > partial.score
+    assert near.matched_stack == ["Python", "PostgreSQL"]
+    assert ("info", "Близкий опыт: RabbitMQ вместо Kafka") in [(reason.kind, reason.text) for reason in near.reasons]
+    assert not any(reason.kind == "minus" for reason in near.reasons)
+    # Сила профиля не перевешивает отсутствующую технологию.
+    strong = rank(request, candidate(test_score=1.0, fsp_achievements=[]), NOW)
+    assert full.score > strong.score
 
     # Вне категории: другая специализация и грейд дальше смежного.
     assert rank(request, candidate(specialization="frontend"), NOW) is None
@@ -75,7 +86,11 @@ def test_ranking_orders_by_fit_then_profile_strength():
     stale = rank(request, candidate(assigned_at=NOW - timedelta(days=400)), NOW)
     assert with_fsp.score > partial.score and stronger_test.score > partial.score > stale.score
     # Нет истории ФСП — нет надбавки, но и упоминаний об этом в объяснении нет.
-    assert not any("ФСП" in reason for reason in partial.reasons)
+    assert not any("ФСП" in reason.text for reason in partial.reasons)
+    # Давнее подтверждение уровня — довод против, место среди кандидатов категории — в доводе о тесте.
+    assert any(reason.kind == "minus" and "400 дн." in reason.text for reason in stale.reasons)
+    ahead = rank(request, candidate(test_percentile=0.8), NOW)
+    assert any("выше, чем у 80% кандидатов категории" in reason.text for reason in ahead.reasons)
     assert {part["key"]: part["value"] for part in partial.breakdown}["fsp"] == 0
 
 

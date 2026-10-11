@@ -132,6 +132,7 @@ export type Attempt = {
   /** Грейд, которому соответствует результат завершённого теста. */
   estimated_grade: string | null
   correct_count: number | null
+  /** Сколько заданий выдано; у идущего теста — наибольшая возможная длина. */
   total: number
   started_at: string
   expires_at: string
@@ -147,7 +148,7 @@ export type Category = {
 }
 export type AssessmentState = {
   category: Category | null
-  active: (Attempt & { position: number; question: Question }) | null
+  active: (Attempt & { position: number; min_total: number; question: Question }) | null
   history: Attempt[]
   /** available_from: null — тест на грейд можно начать сейчас. */
   grades: { grade: string; available_from: string | null }[]
@@ -180,7 +181,8 @@ export type CandidateCard = {
   /** Итоговая оценка 0…100, по которой отсортирована выдача; null — грейд не подтверждён. */
   score: number | null
   breakdown: { key: string; label: string; value: number }[]
-  reasons: string[]
+  /** Объяснение выдачи: доводы за (plus), против (minus) и сведения, не меняющие оценку (info). */
+  reasons: { kind: 'plus' | 'minus' | 'info'; text: string }[]
   invitation_status: InvitationStatus | null
 }
 

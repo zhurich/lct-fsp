@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -11,6 +12,15 @@ class ScorePart(BaseModel):
     key: str
     label: str
     value: float = Field(description="Оценка составляющей, 0…1")
+
+
+class ReasonOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    kind: Literal["plus", "minus", "info"] = Field(
+        description="plus — довод за кандидата, minus — против, info — сведение, не меняющее оценку"
+    )
+    text: str
 
 
 class FspAchievement(BaseModel):
@@ -46,7 +56,7 @@ class CandidateCard(BaseModel):
         description="Итоговая оценка 0…100, по которой отсортирована выдача; null — грейд не подтверждён"
     )
     breakdown: list[ScorePart] = Field(description="Из чего сложилась оценка")
-    reasons: list[str] = Field(description="Почему кандидат в подборке")
+    reasons: list[ReasonOut] = Field(description="Почему кандидат в подборке: доводы за, против и сведения")
     invitation_status: InvitationStatus | None = Field(description="Статус приглашения от текущего работодателя")
 
 

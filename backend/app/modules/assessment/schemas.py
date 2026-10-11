@@ -50,7 +50,7 @@ class AttemptOut(BaseModel):
     score: float | None = Field(description="Балл теста 0…1 по шкале IRT")
     estimated_grade: str | None = Field(description="Грейд, которому соответствует результат завершённого теста")
     correct_count: int | None
-    total: int
+    total: int = Field(description="Сколько заданий выдано; у идущего теста — наибольшая возможная длина")
     started_at: datetime
     expires_at: datetime
     finished_at: datetime | None
@@ -58,6 +58,7 @@ class AttemptOut(BaseModel):
 
 class ActiveAttemptOut(AttemptOut):
     position: int = Field(description="Номер текущего задания (с 1)")
+    min_total: int = Field(description="Наименьшая длина теста: раньше он не заканчивается")
     question: QuestionOut
 
 

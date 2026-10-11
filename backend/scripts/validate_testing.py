@@ -4,7 +4,8 @@
         python -m scripts.validate_testing --db   # статистика заданий по реальным попыткам из базы
 
 Что проверяется: точность оценки уровня и решения «прошёл / не прошёл», повторяемость результата,
-разделение слабых и сильных, устойчивость к угадыванию и к утечке заданий, равномерность показов.
+разделение слабых и сильных, устойчивость к угадыванию и к утечке заданий (в том числе работа мониторинга
+дрейфа, который снимает утёкшие задания с выдачи), равномерность показов.
 Ответы кандидатов генерируются по модели IRT, поэтому симуляция проверяет алгоритм теста и его
 чувствительность к ошибкам калибровки, но не качество формулировок самих заданий — для этого служит
 режим --db, который считает те же показатели заданий по реальным ответам.
@@ -15,7 +16,7 @@ import random
 import statistics
 from collections import defaultdict
 
-from app.modules.assessment import adaptive, bank
+from app.modules.assessment import adaptive, bank, drift
 from scripts import synth
 from scripts.synth import GRADE_LIST, Person, TestRun
 from scripts import utf8_output
@@ -52,6 +53,9 @@ def accuracy(people: list[Person], params: synth.TrueParams, rng: random.Random)
         "rmse": statistics.mean(error**2 for error in errors) ** 0.5,
         "bias": statistics.mean(errors),
         "se": statistics.mean(run.se for run in runs),
+        "length": statistics.mean(len(run.questions) for run in runs),
+        "shortest": _share(len(run.questions) == adaptive.MIN_LENGTH for run in runs),
+        "longest": _share(len(run.questions) == adaptive.MAX_LENGTH for run in runs),
         "grade_exact": _share(grade == person.true_grade for grade, person in zip(estimated, people)),
         "grade_adjacent": _share(
             abs(position(grade) - position(person.true_grade)) <= 1 for grade, person in zip(estimated, people)
@@ -137,32 +141,94 @@ def variants(rng: random.Random, samples: int = 300) -> dict:
     return result
 
 
+_LEAK_GRADE, _LEAK_SPECIALIZATION = "middle", "backend"
+# Списывающий кандидат — на грейд ниже границы, на которую сдаёт.
+_CHEATER_THETA = adaptive.GRADE_CUTS[_LEAK_GRADE] - 1.0
+
+
+def _leaked_answers(tests: int, params: synth.TrueParams, rng: random.Random) -> dict[tuple, str]:
+    """Что можно вынести из чужих тестов: условие задания → верный ответ."""
+    memory: dict[tuple, str] = {}
+    for _ in range(tests):
+        donor = synth.run_test(_LEAK_SPECIALIZATION, _LEAK_GRADE, synth.honest(0.5, params, rng), rng)
+        for question in donor.questions:
+            memory[question["text"], question["code"]] = question["options"][question["correct"]]
+    return memory
+
+
+def _cheater(memory: dict[tuple, str], params: synth.TrueParams, rng: random.Random, recognized: list[bool]):
+    """Заученный ответ помогает, только если задание пришло в том же виде (тот же текст и код) и верный
+    вариант есть среди предложенных; иначе кандидат отвечает сам."""
+    own = synth.honest(_CHEATER_THETA, params, rng)
+
+    def respond(item, question):
+        known = memory.get((question.text, question.code))
+        recognized.append(known in question.options)
+        return question.options.index(known) if known in question.options else own(item, question)
+
+    return respond
+
+
+def _cheater_runs(
+    memory: dict[tuple, str], params: synth.TrueParams, rng: random.Random, runs: int, flagged=()
+) -> tuple[list[TestRun], float]:
+    recognized: list[bool] = []
+    respond = _cheater(memory, params, rng, recognized)
+    tests = [
+        synth.run_test(_LEAK_SPECIALIZATION, _LEAK_GRADE, respond, rng, flagged=flagged) for _ in range(runs)
+    ]
+    return tests, _share(recognized)
+
+
 def leak(params: synth.TrueParams, rng: random.Random, cheaters: int = 400) -> list[dict]:
     """Утечка: слабый кандидат заучил ответы из K чужих тестов на тот же грейд и специализацию.
 
-    Заученный ответ помогает, только если задание пришло в том же виде (тот же текст и код) и верный
-    вариант есть среди предложенных; иначе кандидат отвечает сам. Для сравнения: при едином наборе
-    заданий достаточно одного утёкшего теста, чтобы пройти с вероятностью 100%.
+    Для сравнения: при едином наборе заданий достаточно одного утёкшего теста, чтобы пройти с
+    вероятностью 100%.
     """
-    grade, specialization = "middle", "backend"
-    cheater_theta = adaptive.GRADE_CUTS[grade] - 1.0
     rows = []
     for leaked in (0, 10, 50, 200):
-        memory: dict[tuple, str] = {}
-        for _ in range(leaked):
-            donor = synth.run_test(specialization, grade, synth.honest(0.5, params, rng), rng)
-            for question in donor.questions:
-                memory[question["text"], question["code"]] = question["options"][question["correct"]]
-        recognized = []
-
-        def respond(item, question, own=synth.honest(cheater_theta, params, rng)):
-            known = memory.get((question.text, question.code))
-            recognized.append(known in question.options)
-            return question.options.index(known) if known in question.options else own(item, question)
-
-        passed = [synth.run_test(specialization, grade, respond, rng).passed for _ in range(cheaters)]
-        rows.append({"leaked": leaked, "recognized": _share(recognized), "pass_rate": _share(passed)})
+        tests, recognized = _cheater_runs(_leaked_answers(leaked, params, rng), params, rng, cheaters)
+        rows.append({"leaked": leaked, "recognized": recognized, "pass_rate": _share(run.passed for run in tests)})
     return rows
+
+
+def monitoring(people: list[Person], params: synth.TrueParams, rng: random.Random, cheaters: int = 400) -> dict:
+    """Мониторинг дрейфа (drift.py) в двух режимах.
+
+    Без утечки: каждый кандидат честно проходит один тест — сколько заданий снято с выдачи напрасно.
+    С утечкой: к честным попыткам по одной специализации добавляются попытки списывающих, знающих ответы
+    из 200 чужих тестов; мониторинг снимает задания, после чего прогоняется новая волна списывающих.
+    """
+    honest = [
+        (
+            person.specialization,
+            synth.run_test(
+                person.specialization, person.claimed_grade, synth.honest(person.theta, params, rng), rng
+            ).questions,
+        )
+        for person in people
+    ]
+    clean = drift.analyze(questions for _, questions in honest)
+    checked = [row for row in clean if row.shown >= drift.MIN_SHOWN]
+
+    memory = _leaked_answers(200, params, rng)
+    before, _ = _cheater_runs(memory, params, rng, cheaters)
+    own = [questions for specialization, questions in honest if specialization == _LEAK_SPECIALIZATION]
+    report = drift.analyze([*own, *(run.questions for run in before)])
+    flagged = {row.item_id for row in report if row.flagged}
+    after, recognized = _cheater_runs(memory, params, rng, cheaters, flagged)
+    return {
+        "checked": len(checked),
+        "false_flags": sum(row.flagged for row in checked),
+        "honest_tests": len(own),
+        "cheater_tests": cheaters,
+        "flagged": len(flagged),
+        "pool": len(bank.pool(_LEAK_SPECIALIZATION, True)),
+        "pass_before": _share(run.passed for run in before),
+        "pass_after": _share(run.passed for run in after),
+        "recognized_after": recognized,
+    }
 
 
 def item_stats(attempts: list[list[dict]], thetas: list[float]) -> list[dict]:
@@ -203,18 +269,23 @@ def run(n: int = 2000, seed: int = 1) -> dict:
         "guessing": guessing(realistic, rng),
         "variants": variants(rng),
         "leak": leak(realistic, rng),
+        "monitoring": monitoring(people, realistic, rng),
     }
 
 
 def render(result: dict) -> str:
     ideal, real = result["accuracy"]["ideal"], result["accuracy"]["realistic"]
-    again, cert = result["consistency"], result["certification"]
+    again, cert, watch = result["consistency"], result["certification"], result["monitoring"]
     lines = [
         "## Тестирование",
         "",
         f"Симуляция {result['n']} кандидатов с известным уровнем. «Идеальная калибровка» — истинная сложность "
         "заданий равна назначенной; «реалистичная» — отличается от неё (сдвиг сложности со стандартным "
         "отклонением 0,4 грейда, разброс различающей способности ±25%). Остальные показатели — для реалистичной.",
+        "",
+        f"Тест переменной длины: от {adaptive.MIN_LENGTH} до {adaptive.MAX_LENGTH} заданий, в среднем "
+        f"{real['length']:.1f}. На наименьшей длине заканчивают {_pct(real['shortest'])} тестов (результат "
+        f"очевиден), до наибольшей доходят {_pct(real['longest'])} (кандидат у самой границы грейда).",
         "",
         "### Точность оценки (один тест на заявленный грейд)",
         "",
@@ -288,6 +359,19 @@ def render(result: dict) -> str:
         "",
         "Для сравнения: при едином наборе заданий одного утёкшего теста достаточно, чтобы пройти наверняка.",
         "",
+        "### Мониторинг дрейфа",
+        "",
+        "Задание снимается с выдачи, если его решают заметно чаще, чем следует из уровня кандидатов по "
+        f"общим (генерируемым) заданиям: не меньше {drift.MIN_SHOWN} ответов, превышение больше "
+        f"{drift.EXCESS * 100:.0f} п.п. и больше {drift.Z_SCORE} стандартного отклонения.",
+        "",
+        f"- Без утечки: из {watch['checked']} профильных заданий с достаточным числом ответов снято напрасно — "
+        f"{watch['false_flags']}",
+        f"- С утечкой 200 тестов ({watch['honest_tests']} честных попыток и {watch['cheater_tests']} попыток "
+        f"списывающих по одной специализации): снято {watch['flagged']} из {watch['pool']} профильных заданий",
+        f"- Списывающие проходят тест: до мониторинга — {_pct(watch['pass_before'])}, после — "
+        f"{_pct(watch['pass_after'])} (узнают {_pct(watch['recognized_after'])} заданий)",
+        "",
         "### Показы заданий",
         "",
     ]
@@ -305,14 +389,24 @@ def from_db() -> str:
 
     with SessionLocal() as db:
         finished = db.scalars(select(Assessment).where(Assessment.finished_at.is_not(None))).all()
-    complete = [attempt for attempt in finished if len(attempt.questions) == adaptive.TEST_LENGTH]
+    complete = [attempt for attempt in finished if adaptive.is_complete(attempt.questions)]
     if len(complete) < 20:
         return f"Завершённых попыток в базе: {len(complete)} — для статистики заданий нужно хотя бы 20."
     rows = item_stats([attempt.questions for attempt in complete], [attempt.theta for attempt in complete])
-    lines = [f"Попыток: {len(complete)}", "", "| Задание | Показов | Верных | Дискриминация D |", "|---|---|---|---|"]
+    # Ожидаемая решаемость и признак дрейфа считаются только для профильных заданий (см. drift.py).
+    drifted = {row.item_id: row for row in drift.analyze(attempt.questions for attempt in complete)}
+    lines = [
+        f"Попыток: {len(complete)}",
+        "",
+        "| Задание | Показов | Верных | Ожидалось | Дискриминация D | Дрейф |",
+        "|---|---|---|---|---|---|",
+    ]
     for row in rows:
         d = "—" if row["discrimination"] is None else f"{row['discrimination']:+.2f}"
-        lines.append(f"| {row['item']} | {row['shown']} | {_pct(row['correct'])} | {d} |")
+        watch = drifted.get(row["item"])
+        expected = _pct(watch.expected) if watch else "—"
+        mark = "снять с выдачи" if watch and watch.flagged else ""
+        lines.append(f"| {row['item']} | {row['shown']} | {_pct(row['correct'])} | {expected} | {d} | {mark} |")
     return "\n".join(lines)
 
 

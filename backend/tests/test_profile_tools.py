@@ -111,7 +111,7 @@ def test_hidden_fields_are_not_shown_or_scored(client, outbox):
     hidden = card()
     assert (hidden["city"], hidden["about"], hidden["experience_years"], hidden["work_formats"]) == ("", "", None, [])
     assert not hidden["fsp_linked"] and hidden["fsp_achievements"] == []
-    assert not any("ФСП" in reason for reason in hidden["reasons"])
+    assert not any("ФСП" in reason["text"] for reason in hidden["reasons"])
     # Стек и категория видны всегда.
     assert hidden["stack"] == ["Linux"] and hidden["grade"] == "junior"
 

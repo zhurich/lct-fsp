@@ -63,6 +63,21 @@ class ItemExposure(Base):
     shown: Mapped[int] = mapped_column(default=0)
 
 
+class ItemFlag(Base):
+    """Задание, снятое с выдачи мониторингом дрейфа: его решали заметно чаще, чем предсказывает модель.
+
+    Строка не удаляется автоматически: задание возвращают в банк вручную, после того как его переписали.
+    """
+
+    __tablename__ = "item_flags"
+
+    item_id: Mapped[str] = mapped_column(String(60), primary_key=True)
+    shown: Mapped[int]
+    observed: Mapped[float]
+    expected: Mapped[float]
+    flagged_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utcnow)
+
+
 class CandidateCategory(Base):
     """Подтверждённая тестом категория кандидата (специализация × грейд) — её видит работодатель."""
 

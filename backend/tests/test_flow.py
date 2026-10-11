@@ -3,8 +3,8 @@ from urllib.parse import parse_qs, urlsplit
 
 from app.core.config import settings
 from app.core.db import SessionLocal, utcnow
-from app.modules.assessment import adaptive
-from app.modules.assessment.models import Assessment, CandidateCategory
+from app.modules.assessment import adaptive, bank
+from app.modules.assessment.models import Assessment, CandidateCategory, ItemFlag
 from app.modules.fsp.idp import provider
 
 PASSWORD = "password123"
@@ -191,9 +191,9 @@ def test_questions_are_not_repeated_within_and_across_attempts(client, outbox):
             [question["item_id"] for question in attempt.questions]
             for attempt in db.query(Assessment).filter_by(user_id=user_id).order_by(Assessment.id)
         ]
-    assert len(set(first)) == len(first) == adaptive.TEST_LENGTH
-    # Профильных заданий в тесте треть; общие во второй попытке берутся из ещё не виденных.
-    assert sum(not item.startswith("common.") for item in first) == adaptive.TEST_LENGTH // 3
+    assert adaptive.MIN_LENGTH <= len(set(first)) == len(first) <= adaptive.MAX_LENGTH
+    # Профильное задание — каждое третье; общие во второй попытке берутся из ещё не виденных.
+    assert sum(not item.startswith("common.") for item in first) == (len(first) + 1) // 3
     assert not {item for item in first if item.startswith("common.")} & set(second)
 
 
@@ -211,3 +211,22 @@ def test_expired_attempt_counts_as_failed(client, outbox):
     state = client.get("/api/candidate/assessment").json()
     assert state["active"] is None and state["history"][0]["status"] == "failed"
     assert state["history"][0]["estimated_grade"] is None
+
+
+def test_items_flagged_by_drift_monitoring_are_not_served(client, outbox):
+    signup(client, outbox, "drift-cand@example.com", "candidate")
+    flagged = [item.id for item in bank.pool("backend", True)]
+    with SessionLocal() as db:
+        db.add_all(ItemFlag(item_id=item_id, shown=40, observed=0.9, expected=0.5) for item_id in flagged)
+        db.commit()
+    try:
+        take_test(client, "junior")
+        user_id = client.get("/api/auth/me").json()["id"]
+        with SessionLocal() as db:
+            served = [question["item_id"] for question in db.query(Assessment).filter_by(user_id=user_id).one().questions]
+        # Все профильные задания сняты с выдачи: их места заняли общие, с генерируемым условием.
+        assert served and all(item_id.startswith("common.") for item_id in served)
+    finally:
+        with SessionLocal() as db:
+            db.query(ItemFlag).delete()
+            db.commit()

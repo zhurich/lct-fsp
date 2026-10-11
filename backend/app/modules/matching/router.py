@@ -15,6 +15,7 @@ from app.modules.invitations.models import Invitation
 from app.modules.matching.models import Need
 from app.modules.matching.parser import parse_need
 from app.modules.matching.ranking import (
+    MIN_PEERS,
     CandidateData,
     Match,
     Requirements,
@@ -86,12 +87,18 @@ def _find(db: Session, employer_id: int, requirements: Requirements) -> list[Can
         answers.setdefault(answer.candidate_id, []).append(answer)
     now = utcnow()
     cards = []
+    rows = db.execute(query).all()
+    # Баллы теста по категориям: в объяснении показывается место кандидата среди таких же.
+    peers: dict[tuple[str, str], list[float]] = {}
+    for _, category in rows:
+        peers.setdefault((category.specialization, category.grade), []).append(category.score)
     # Стек хранится в JSON и сопоставляется в приложении: так запрос переносим между СУБД.
-    for profile, category in db.execute(query):
+    for profile, category in rows:
         # Скрытые кандидатом сведения не показываются и не участвуют в оценке: работодатель не должен
         # видеть в объяснении то, что кандидат не раскрыл.
         hidden = set(profile.hidden_fields)
         own_answers = answers.get(profile.user_id, [])
+        scores = peers[category.specialization, category.grade]
         match = rank(
             requirements,
             CandidateData(
@@ -105,6 +112,9 @@ def _find(db: Session, employer_id: int, requirements: Requirements) -> list[Can
                 last_answer_at=max((answer.created_at for answer in own_answers), default=None),
                 answer_ratings=[answer.rating for answer in own_answers if answer.rating],
                 answers_total=len(own_answers),
+                test_percentile=sum(score < category.score for score in scores) / (len(scores) - 1)
+                if len(scores) >= MIN_PEERS
+                else None,
             ),
             now,
         )

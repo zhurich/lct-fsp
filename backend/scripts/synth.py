@@ -134,16 +134,15 @@ def run_test(
     rng: random.Random,
     exposure: dict[str, int] | None = None,
     seen: Collection[str] = (),
+    flagged: Collection[str] = (),
 ) -> TestRun:
     """Полный адаптивный тест теми же функциями, что и в приложении, без БД и веб-слоя."""
     exposure = exposure if exposure is not None else {}
     theta, se, questions, responses = adaptive.start_theta(grade), 0.0, [], []
-    for position in range(adaptive.TEST_LENGTH):
+    while not adaptive.is_finished(responses, grade):
         used = {question["item_id"] for question in questions}
-        pool = [
-            item for item in bank.pool(specialization, adaptive.is_specialized(position)) if item.id not in used
-        ]
-        item = adaptive.pick_item(pool, theta, exposure, seen, rng)
+        pool = adaptive.position_pool(specialization, len(questions), used, flagged)
+        item = adaptive.pick_item(pool, adaptive.GRADE_CUTS[grade], exposure, seen, rng)
         exposure[item.id] = exposure.get(item.id, 0) + 1
         question = item.generate(rng)
         answer = respond(item, question)

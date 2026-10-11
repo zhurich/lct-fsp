@@ -96,7 +96,7 @@ def test_challenge_answers_refresh_profile(client, outbox):
         for item in client.get("/api/employer/candidates", params={"specialization": "data"}).json()
         if item["candidate_id"] == candidate_id
     )
-    assert any("задания работодателей: 1, средняя оценка работодателей 5.0" in reason for reason in card["reasons"])
+    assert any("задания работодателей: 1, средняя оценка работодателей 5.0" in reason["text"] for reason in card["reasons"])
 
     login(client, "ch-cand@example.com")
     assert client.get("/api/candidate/answers").json()[0]["rating"] == 5
